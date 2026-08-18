@@ -62,28 +62,31 @@ local function BringMonsters()
 	isBringing = true
 	savedPositions = monsters
 
-	-- Teleporta uma vez perto do player
-	local angle = 0
-	for _, data in ipairs(savedPositions) do
+	-- Teleporta todos bem perto do jogador (um pouco na frente)
+	for i, data in ipairs(savedPositions) do
 		if data.root and data.root.Parent then
-			local offset = Vector3.new(
-				math.cos(math.rad(angle)) * 22,
-				2.5,
-				math.sin(math.rad(angle)) * 22
+			-- Posição aleatória perto do player (entre 6 e 12 studs)
+			local randomOffset = Vector3.new(
+				math.random(-10, 10),
+				2,
+				math.random(-10, 10)
 			)
 			
+			-- Garante que não fique muito longe nem muito em cima
+			if randomOffset.Magnitude < 6 then
+				randomOffset = randomOffset.Unit * 8
+			end
+
 			pcall(function()
-				data.root.CFrame = CFrame.new(myRoot.Position + offset)
+				data.root.CFrame = CFrame.new(myRoot.Position + randomOffset)
 			end)
-			
-			angle = angle + 32
 		end
 	end
 
-	print("Trouxe", #monsters, "monstros. Eles estão livres e podem se mover normalmente!")
+	print("Trouxe", #monsters, "monstros perto de você! Eles estão livres.")
 
 	local startTime = tick()
-	local duration = 60 -- tempo total
+	local duration = 60
 
 	-- Só puxa de volta se eles forem muito longe
 	bringConnection = RunService.Heartbeat:Connect(function()
@@ -94,7 +97,6 @@ local function BringMonsters()
 			end
 			isBringing = false
 
-			-- Devolve pros lugares originais
 			for _, data in ipairs(savedPositions) do
 				pcall(function()
 					if data.root and data.root.Parent then
@@ -112,25 +114,25 @@ local function BringMonsters()
 		local myRoot = char:FindFirstChild("HumanoidRootPart")
 		if not myRoot then return end
 
-		local angle = 0
 		for _, data in ipairs(savedPositions) do
 			if data.root and data.root.Parent then
 				local distance = (data.root.Position - myRoot.Position).Magnitude
 
-				-- Só puxa se estiver muito longe (mais de 70 studs)
-				if distance > 70 then
-					local offset = Vector3.new(
-						math.cos(math.rad(angle)) * 22,
-						2.5,
-						math.sin(math.rad(angle)) * 22
+				-- Só puxa se estiver muito longe
+				if distance > 65 then
+					local randomOffset = Vector3.new(
+						math.random(-10, 10),
+						2,
+						math.random(-10, 10)
 					)
-					
+					if randomOffset.Magnitude < 6 then
+						randomOffset = randomOffset.Unit * 8
+					end
+
 					pcall(function()
-						data.root.CFrame = CFrame.new(myRoot.Position + offset)
+						data.root.CFrame = CFrame.new(myRoot.Position + randomOffset)
 					end)
 				end
-
-				angle = angle + 32
 			end
 		end
 	end)
@@ -149,4 +151,4 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	end
 end)
 
-print("Pronto. /bring ou B | Monstros livres para se mover normalmente")
+print("Pronto. /bring ou B | Monstros teleportados perto de você")
