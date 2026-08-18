@@ -1,21 +1,17 @@
--- Lethal Ape - Bring Monsters (Delta)
--- Comando: /bring ou tecla B
-
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
 local MonsterNames = {
-	"Sandman", "Ashy", "Gus", "Dus", "Kus", "Lost",
-	"Bloodman", "Lurker", "Scar", "Meat", "Billy",
-	"SandGuy", "John", "Dlud", "Blud", "Unknown"
+	"Kus", "Gus", "Lurker", "Sandman", "Ashy",
+	"Dus", "Bloodman", "Lost", "Scar", "Blud", "Dlud"
 }
 
+local savedPositions = {}
+
 local function GetRoot(model)
-	return model:FindFirstChild("HumanoidRootPart")
-		or model.PrimaryPart
-		or model:FindFirstChildWhichIsA("BasePart")
+	return model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
 end
 
 local function BringMonsters()
@@ -24,47 +20,60 @@ local function BringMonsters()
 	local myRoot = char:FindFirstChild("HumanoidRootPart")
 	if not myRoot then return end
 
-	local found = 0
+	savedPositions = {}
 	local angle = 0
-	local radius = 10
+	local count = 0
 
 	for _, name in ipairs(MonsterNames) do
 		for _, obj in ipairs(Workspace:GetDescendants()) do
 			if obj:IsA("Model") and obj.Name:lower():find(name:lower()) then
 				local root = GetRoot(obj)
 				if root and obj:FindFirstChildOfClass("Humanoid") then
-					local offset = Vector3.new(
-						math.cos(math.rad(angle)) * radius,
-						2,
-						math.sin(math.rad(angle)) * radius
-					)
+					-- Salva posição original
+					table.insert(savedPositions, {
+						root = root,
+						cframe = root.CFrame
+					})
 
+					-- Teleporta uma vez só (eles ficam livres depois)
+					local offset = Vector3.new(
+						math.cos(math.rad(angle)) * 12,
+						3,
+						math.sin(math.rad(angle)) * 12
+					)
 					pcall(function()
 						root.CFrame = CFrame.new(myRoot.Position + offset)
-						if obj.PrimaryPart then
-							obj:SetPrimaryPartCFrame(CFrame.new(myRoot.Position + offset))
-						end
 					end)
 
-					found += 1
-					angle += 28
+					angle = angle + 32
+					count = count + 1
 					break
 				end
 			end
 		end
 	end
 
-	print("[Lethal Ape] Tentou trazer " .. found .. " monstros.")
+	print("Trouxe", count, "monstros. Eles estão livres por 60 segundos...")
+
+	-- Espera 60 segundos sem travar eles
+	task.wait(60)
+
+	-- Devolve pros lugares originais
+	for _, data in ipairs(savedPositions) do
+		pcall(function()
+			data.root.CFrame = data.cframe
+		end)
+	end
+
+	print("Monstros devolvidos.")
 end
 
--- Chat
 LocalPlayer.Chatted:Connect(function(msg)
-	if msg:lower() == "/bring" or msg:lower() == "/bringmonsters" then
+	if msg:lower() == "/bring" then
 		BringMonsters()
 	end
 end)
 
--- Tecla B
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed then return end
 	if input.KeyCode == Enum.KeyCode.B then
@@ -72,4 +81,4 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	end
 end)
 
-print("Bring Monsters carregado. Use /bring ou aperte B.")
+print("Pronto. /bring ou B")
