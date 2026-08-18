@@ -32,7 +32,7 @@ local function FindMonsters()
 						root = root,
 						originalCFrame = root.CFrame
 					})
-					break -- pega só 1 de cada tipo (igual o original)
+					break
 				end
 			end
 		end
@@ -62,12 +62,30 @@ local function BringMonsters()
 	isBringing = true
 	savedPositions = monsters
 
-	print("Trouxe", #monsters, "monstros. Segurando por 60 segundos...")
+	-- Teleporta uma vez perto do player
+	local angle = 0
+	for _, data in ipairs(savedPositions) do
+		if data.root and data.root.Parent then
+			local offset = Vector3.new(
+				math.cos(math.rad(angle)) * 22,
+				2.5,
+				math.sin(math.rad(angle)) * 22
+			)
+			
+			pcall(function()
+				data.root.CFrame = CFrame.new(myRoot.Position + offset)
+			end)
+			
+			angle = angle + 32
+		end
+	end
+
+	print("Trouxe", #monsters, "monstros. Eles estão livres e podem se mover normalmente!")
 
 	local startTime = tick()
-	local duration = 60 -- tempo em segundos
+	local duration = 60 -- tempo total
 
-	-- Loop contínuo que força a posição todo frame
+	-- Só puxa de volta se eles forem muito longe
 	bringConnection = RunService.Heartbeat:Connect(function()
 		if not isBringing or (tick() - startTime) > duration then
 			if bringConnection then
@@ -97,18 +115,20 @@ local function BringMonsters()
 		local angle = 0
 		for _, data in ipairs(savedPositions) do
 			if data.root and data.root.Parent then
-				local offset = Vector3.new(
-					math.cos(math.rad(angle)) * 12,
-					3,
-					math.sin(math.rad(angle)) * 12
-				)
+				local distance = (data.root.Position - myRoot.Position).Magnitude
 
-				pcall(function()
-					-- Força a posição + zera velocidade (ajuda a não voar)
-					data.root.CFrame = CFrame.new(myRoot.Position + offset)
-					data.root.AssemblyLinearVelocity = Vector3.zero
-					data.root.AssemblyAngularVelocity = Vector3.zero
-				end)
+				-- Só puxa se estiver muito longe (mais de 70 studs)
+				if distance > 70 then
+					local offset = Vector3.new(
+						math.cos(math.rad(angle)) * 22,
+						2.5,
+						math.sin(math.rad(angle)) * 22
+					)
+					
+					pcall(function()
+						data.root.CFrame = CFrame.new(myRoot.Position + offset)
+					end)
+				end
 
 				angle = angle + 32
 			end
@@ -116,14 +136,12 @@ local function BringMonsters()
 	end)
 end
 
--- Comando no chat
 LocalPlayer.Chatted:Connect(function(msg)
 	if msg:lower() == "/bring" then
 		BringMonsters()
 	end
 end)
 
--- Tecla B
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed then return end
 	if input.KeyCode == Enum.KeyCode.B then
@@ -131,4 +149,4 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	end
 end)
 
-print("Pronto. /bring ou B | Monstros agora são segurados por 60s")
+print("Pronto. /bring ou B | Monstros livres para se mover normalmente")
